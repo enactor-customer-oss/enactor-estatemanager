@@ -1,0 +1,27 @@
+dependencies:
+- name: em-processing
+  repository: ""
+  version: '*'
+- name: em-application
+  repository: ""
+  version: '*'
+- name: em-services
+  repository: ""
+  version: '*'
+- name: em-terminalmanagement
+  repository: ""
+  version: '*'
+- name: em-adyenintegrationservice
+  repository: ""
+  version: '*'
+- name: em-cardauth
+  repository: ""
+  version: '*'
+- name: em-reports
+  repository: ""
+  version: '*'
+- name: mariadb
+  repository: https://charts.bitnami.com/bitnami
+  version: 11.4.0
+digest: sha256:856bfc0f9eb7aa94bd88a94fecea2f6d8443859cdcd6760b1ce38b42ef7a9661
+generated: "2023-06-02T11:11:52.460831+02:00"

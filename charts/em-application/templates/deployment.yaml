@@ -1,0 +1,219 @@
+{{- $fullName := include "em-application.fullname" . -}}
+
+{{- $waitforitRegistry := .Values.global.waitforit.image.registry | default .Values.initcontainers.waitforit.image.registry -}}
+{{- $waitforitRepository := .Values.global.waitforit.image.repository | default .Values.initcontainers.waitforit.image.repository -}}
+
+{{- $applicationRegistry := .Values.global.enactor.image.registry | default .Values.image.registry -}}
+{{- $applicationRepository := .Values.global.enactor.image.repository | default .Values.image.repository -}}
+
+{{- $applicationTag :=  default (default .Values.global.enactor.image.tag .Chart.AppVersion) .Values.image.tag  -}}
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "em-application.fullname" . }}
+  labels:
+    {{- include "em-application.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  minReadySeconds: 5
+  progressDeadlineSeconds: 600
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "em-application.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "em-application.selectorLabels" . | nindent 8 }}
+        {{- range $labelName, $labelValue := $.Values.podLabels }}
+        {{ $labelName | quote }}: {{ $labelValue | quote }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "em-application.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      automountServiceAccountToken: false
+      restartPolicy: Always
+
+      volumes:
+        - name: enactor-data-{{ .Values.application.nameShort }}
+          persistentVolumeClaim:
+            claimName: {{ template "em-application.fullname" . }}
+  
+        - name: enactor-data-{{ .Values.application.nameShort }}-home
+          emptyDir: {}
+          
+       {{- if .Values.application.configMap.debugLog.enable }}
+        - name: debuglog
+          configMap:
+            name: {{ .Values.application.configMap.debugLog.name }}
+       {{- end }}
+
+      #- name: tomcatsetenv
+      #  configMap:
+      #    name: {{ .Values.application.nameShort }}-setenv  
+
+      terminationGracePeriodSeconds: 300
+
+      initContainers:
+        - name: ems-http-check
+          securityContext:
+            {{- toYaml .Values.initcontainers.waitforit.securityContext | nindent 12 }}
+          image: {{ $waitforitRegistry }}/{{ $waitforitRepository }}:{{ .Values.initcontainers.waitforit.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{ .Values.initcontainers.waitforit.resources | toYaml | indent 12 | trim}}            
+          env:
+            - name: HOST
+              value: "{{ .Release.Name }}-em-services"
+            - name: PORT
+              value: "39833"
+            - name: TIMEOUT
+              value: '500'
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{ if .Values.image.checksum }}
+          image: "{{ $applicationRegistry }}/{{ $applicationRepository }}:{{ $applicationTag }}{{- printf "@%s" .Values.image.checksum }}"
+          {{else}}
+          image: "{{ $applicationRegistry }}/{{ $applicationRepository }}:{{ $applicationTag }}"
+          {{end}}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+          {{- range $key, $value := .Values.service.ports }}
+          - name: {{ $key }}
+            containerPort: {{ $value }}
+            protocol: TCP
+          {{- end }}
+
+          {{ if .Values.probes.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http          
+            periodSeconds: {{ .Values.probes.readinessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readinessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.probes.readinessProbe.initialDelaySeconds }}
+            successThreshold: {{ .Values.probes.readinessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.probes.readinessProbe.timeoutSeconds }}
+          {{end}}
+
+          {{ if .Values.probes.startupProbe.enabled }}
+          #startupProbe gives failureThreshold * periodSeconds seconds for the container to suceeed once then liveness probe kicks in
+          #ideal for slow starting "un-predictable" containers such as EMP
+          startupProbe: 
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: {{ .Values.probes.startupProbe.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startupProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.probes.startupProbe.initialDelaySeconds }}
+            successThreshold: {{ .Values.probes.startupProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.probes.startupProbe.timeoutSeconds }}
+          {{end}}
+
+
+          {{ if .Values.probes.livenessProbe.enabled }}
+          #livenessProbe will first begin after startupProbe has had one successful 200 OK
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http            
+            periodSeconds: {{ .Values.probes.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.probes.livenessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.probes.livenessProbe.initialDelaySeconds }}
+            successThreshold: {{ .Values.probes.livenessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.probes.livenessProbe.timeoutSeconds }}
+          {{end}}
+
+
+          #lifecycle:
+          #  preStop:
+          #    exec:
+          #      #command: ["/bin/bash", "-c", "PID=`pidof java` && kill -SIGTERM $PID && while ps -p $PID > /dev/null; do sleep 1; done;"] 
+          #      command: ["/bin/bash", "-c", "/enactor/shared/tomcat/bin/catalina.sh stop 30 && sleep 30"]
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          volumeMounts:
+            #- name:  tomcatsetenv
+            #  mountPath: /enactor/shared/tomcat/bin/setenv.sh
+            #  subPath: setenv.sh
+            - mountPath: /enactor/app/home/DeploymentJARs
+              name: enactor-data-{{ .Values.application.nameShort }}
+              subPath: DeploymentJARs
+            - mountPath: "/enactor/app/home/Data/Enactor Web Maintenance/MessageResource"
+              name: enactor-data-{{ .Values.application.nameShort }}
+              subPath: MessageResources
+            {{- if .Values.application.configMap.debugLog.enable }}
+            - name:  debuglog
+              mountPath: {{ .Values.application.configMap.debugLog.mountPath }}
+              subPath: {{ .Values.application.configMap.debugLog.subPath }}
+            {{ end }}
+
+            # common environmental variables
+          envFrom:
+          - configMapRef:
+              name: {{ .Release.Name }}-envs-common-env
+          - configMapRef:
+              name: {{ .Release.Name }}-envs-common-em-env
+          - configMapRef:
+              name: {{ $fullName }}-envs-{{ .Values.application.nameShort }}-env
+
+          env:
+          - name: ENACTOR_JMX_SERVERHOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+                
+          - name: ENACTOR_RMI_SERVERHOST
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+
+          - name: ENACTOR_JMX_APPLICATIONID
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+
+          {{- if .Values.global.enactor.extraVars }}
+          {{ toYaml .Values.global.enactor.extraVars | nindent 10 }}
+          {{- end }}
+
+          {{- if .Values.application.extraVars }}
+          {{ toYaml .Values.application.extraVars | nindent 10 }}
+          {{- end }}
+
+          
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,23 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+
+{{- $fullName := include "em-adyenintegrationservice.fullname" . -}}
+
+{{- if semverCompare ">=1.21-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: policy/v1
+{{- else -}}
+apiVersion: policy/v1beta1
+{{- end }}
+
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "em-adyenintegrationservice.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: {{ .Values.application.name }}
+      {{- include "em-adyenintegrationservice.labels" . | nindent 6 }}
+      
+{{ end }}

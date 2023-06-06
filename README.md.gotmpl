@@ -1,0 +1,29 @@
+{{ template "chart.header" . }}
+{{ template "chart.description" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+## Enactor Deployment
+
+| Service | Description |
+| ------ | ------ |
+| EMA | Application User Interface |
+| EMP | Application Processing |
+| EMS | Key online services include |
+| EMR | Report engine for estate Manager reporting|
+| EMC | Card Auth |
+| TMS | Terminal Management Services |
+
+## Installing the Chart
+
+To install the chart with the release name `my-release`:
+
+```console
+$ helm install my-release {{ template "chart.name" . }}
+```
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}

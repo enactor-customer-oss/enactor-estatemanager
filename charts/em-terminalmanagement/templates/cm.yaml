@@ -1,0 +1,46 @@
+{{- $fullName := include "em-terminalmanagement.fullname" . -}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-envs-{{ .Values.application.nameShort }}-env
+  labels:
+    {{- include "em-terminalmanagement.labels" . | nindent 4 }}
+data:
+    ENACTOR_JMX_APPLICATIONID: {{ .Values.application.nameShort }}
+    ENACTOR_MODULES_TMS: "true"
+    ENACTOR_RMI_SERVERHOST: {{ .Values.application.name }}
+    JXMX: {{ .Values.application.jxmx }}
+
+#apiVersion: v1
+#kind: ConfigMap
+#metadata:
+#  name: {{ $fullName }}-ema-debuglog
+#data:
+#  enactor-web-maintenance.log.properties: |
+#    #Settings for root logger
+#    log4mj.home=${ENACTOR_COMMON_APPLICATIONHOME}/logs
+#    log4mj.file.name=${LOG_PREFIX_NAME}-enactor-web-maintenance.log
+#    log4mj.logToScreen=true
+#    #Level here means the level that gets logged in this file
+#    #So even if there were a class logging at debug level it would not get written to this file
+#    log4mj.level=LOG_DEBUG
+#    log4mj.loggerManagerClassname=com.enactor.core.logging.Log4jLoggerManager
+#
+#    #com.enactor.mfc.user.level=LOG_DEBUG
+#    Process.level=LOG_DEBUG
+#
+#    #Root logger level
+#    # .level=LOG_VITAL_INFORMATION
+#    .level=LOG_INFORMATION
+#    #.level=LOG_DEBUG
+#    #.level=LOG_ERROR
+#
+#    #Database performance logging
+#    com.enactor.core.management.PerformanceLogger.level=${DATABASE_PERFORMANCE_LOG_LEVEL}
+#    com.enactor.core.database.PerformanceLogger.level=${DATABASE_PERFORMANCE_LOG_LEVEL}
+#
+#    #
+#    com.enactor.core.jmx.rmi.level=LOG_DEBUG
+#
+#

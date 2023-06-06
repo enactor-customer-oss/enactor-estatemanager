@@ -1,0 +1,51 @@
+apiVersion: v2
+name: enator-estatemanager
+description: Enactor Estate Manager Stack
+
+type: application
+
+version: 0.0.1
+appVersion: "2.7"
+
+maintainers: 
+  - name: Ryan Gough
+    email: rgo@jysk.com
+  - name:  Troels Bugge Rossen
+    email: tbro@jysk.com
+
+home: https://github.com/jysk-oss/helm-charts
+
+dependencies:
+  - name: em-processing
+    version: "*"
+    file: charts/em-processing
+    condition: em-processing.deploy
+  - name: em-application
+    version: "*"
+    file: charts/em-application
+    condition: em-application.deploy
+  - name: em-services
+    version: "*"
+    file: charts/em-services
+    condition: em-services.deploy
+  - name: em-terminalmanagement
+    version: "*"
+    file: charts/em-terminalmanagement
+    condition: em-terminalmanagement.deploy
+  - name: em-adyenintegrationservice
+    version: "*"
+    file: charts/em-adyenintegrationservice
+    condition: em-adyenintegrationservice.deploy
+  - name: em-cardauth
+    version: "*"
+    file: charts/em-cardauth
+    condition: em-cardauth.deploy
+  - name: em-reports
+    version: "*"
+    file: charts/em-reports
+    condition: em-reports.deploy
+
+  - name: mariadb
+    version: "11.4.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: mariadb.deploy

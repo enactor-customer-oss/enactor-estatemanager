@@ -1,0 +1,16 @@
+{{- $fullName := include "em-processing.fullname" . -}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-envs-{{ .Values.application.nameShort }}-env
+  labels:
+    {{- include "em-processing.labels" . | nindent 4 }}
+data:
+  ENACTOR_BROADCAST_DEFAULTDOWNLOADSERVERHOSTNAME: emp.{{ .Values.global.clusterUrl }}
+  ENACTOR_JMX_APPLICATIONID:  {{ .Values.application.nameShort }}
+  ENACTOR_JMX_MANAGEMENTNODEHOSTNAME: localhost
+  ENACTOR_RMI_SERVERHOST: {{ .Values.application.name }}-0.{{ .Values.application.name }}
+  JXMX: {{ .Values.application.jxmx }}
+  ENACTOR_BROADCAST_DEFAULTDOWNLOADURL: http://emp.{{ .Values.global.clusterUrl }}:{{ .Values.service.ports.externalhttp }}/WebCore/BroadcastFileDownloadServlet
+  ENACTOR_MAXTOTAL: "200"

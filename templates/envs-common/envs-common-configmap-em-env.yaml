@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-envs-common-em-env
+  labels:
+    {{- include "common.matchLabels" . | nindent 4 }}
+    {{- include "common.metaLabels" . | nindent 4 }}
+data:
+    ENACTOR_CONTAINER_DEVICEID: estateManager@HO.enactor
+    ENACTOR_SERVICE_DEVICEID: estateManager@HO.enactor
+    ENACTOR_SERVICE_DEVICETYPE: ESTATE_MANAGER
+    ENACTOR_SERVICE_DEFAULTSCHEDULEDJOBRUNTIMECONTEXT: Enactor Web Retail Processing
+    ENACTOR_COMMON_PARENTPROCESSSET: NextGen
+    ENACTOR_COMMON_DATABASESCHEMA: {{ .Values.global.database.db_schema }}
+    ENACTOR_DB_JDBC_URL: jdbc:mysql://{{ .Values.global.database.db_host }}:{{ .Values.global.database.db_port }}/{{ .Values.global.database.db_schema }}?characterEncoding=utf8\&amp;serverTimezone=Europe/Copenhagen\&amp;defaultFetchSize=1000\&amp;useCursorFetch=true
+    ENACTOR_SERVICE_LOCATIONID: estateManager@HO.enactor
+    ENACTOR_SERVER_PTF_LIVE_URL: pipreprod.fintrax.com:443/pi_public_V2/service.asmx
+    ENACTOR_SERVER_PTF_TEST_URL: pipreprod.fintrax.com:443/pi_public_V2/service.asmx
+    ENACTOR_COMMON_PROCESSSET: ""
