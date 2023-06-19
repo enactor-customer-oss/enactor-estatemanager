@@ -16,4 +16,4 @@ data:
     ENACTOR_SERVICE_LOCATIONID: estateManager@HO.enactor
     ENACTOR_SERVER_PTF_LIVE_URL: pipreprod.fintrax.com:443/pi_public_V2/service.asmx
     ENACTOR_SERVER_PTF_TEST_URL: pipreprod.fintrax.com:443/pi_public_V2/service.asmx
-    ENACTOR_COMMON_PROCESSSET: ""
+    #ENACTOR_COMMON_PROCESSSET: ""

@@ -35,7 +35,7 @@ data:
     ENACTOR_BPEL_RUNTIMEURL: http://{{ .Release.Name }}-{{ $emp }}:{{ $empRmiPort }}/WebCore
     ENACTOR_BROADCAST_DEFAULTDOWNLOADSERVERHOSTNAME: {{ .Release.Name }}-{{ $emp }}
     ENACTOR_BROADCAST_DEFAULTDOWNLOADSERVERPORT: "{{ $empPort }}"
-    ENACTOR_COMMON_APPLICATIONDATAHOME: /enactor/app/data
+    ENACTOR_COMMON_APPLICATIONDATAHOME: /enactor/app/home/data
     ENACTOR_COMMON_APPLICATIONHOME: /enactor/app/home
     ENACTOR_COMMON_DATASOURCENAME: java:comp/env/ENACTOR_DATASOURCE
     ENACTOR_COMMON_ENACTORROOT: /enactor/app/home
@@ -43,7 +43,7 @@ data:
     ENACTOR_COMMON_ENCRYPTEDLIBSDIR: /enactor/app/encryptedlibs
     ENACTOR_COMMON_LICENCEFILENAME: /enactor/shared/licence/licence.xml
     ENACTOR_COMMON_PARENTPROCESSSET: NextGen
-    ENACTOR_COMMON_PROCESSSET: NextGen
+    ENACTOR_COMMON_PROCESSSET: {{ .Values.config.common.processSet | default "NextGen" }}
     ENACTOR_COMMON_SOLRURL: http://solr:39846/solr
     ENACTOR_COMMON_USEPAYMENTSERVICE: "false"
     ENACTOR_DB_DRIVERCLASSNAME: com.mysql.jdbc.Driver
@@ -63,14 +63,15 @@ data:
     ENACTOR_JMX_SERVERHOSTNAME: "0.0.0.0"
     ENACTOR_MAIL_AUTH_FULLADDRESS: "false"
     ENACTOR_MESSAGESERVICE_MESSAGECOMPATIBILITYFORMAT: "1"
-    #ENACTOR_MODULES_CRMMODULE: "true"
-    ENACTOR_MODULES_CRMMODULE: "false"
-    ENACTOR_MODULES_CUSTOMERCOLLECTIONSMODULE: "false"
-    #ENACTOR_MODULES_INVENTORYMODULE: "true"
-    ENACTOR_MODULES_INVENTORYMODULE: "false"
-    ENACTOR_MODULES_ORDERMODULE: "true"
-    ENACTOR_MODULES_REPAIRMODULE: "false"
-    ENACTOR_MODULES_TIMEATTENDANCEMODULE: "false"
+
+    ENACTOR_MODULES_CRMMODULE: {{ .Values.config.modules.crm | default false | quote }}
+    ENACTOR_MODULES_CUSTOMERCOLLECTIONSMODULE: {{ .Values.config.modules.customerCollection | default false | quote }}
+    ENACTOR_MODULES_INVENTORYMODULE: {{ .Values.config.modules.inventory | default false | quote }}
+    ENACTOR_MODULES_ORDERMODULE: {{ .Values.config.modules.order | default false | quote }}
+    ENACTOR_MODULES_PROCESSINGNODEMODULE: {{ .Values.config.modules.processing | default false | quote }}
+    ENACTOR_MODULES_REPAIRMODULE: {{ .Values.config.modules.repair | default false | quote }}
+    ENACTOR_MODULES_TIMEATTENDANCEMODULE: {{ .Values.config.modules.timeAttendance | default false | quote }}
+
     ENACTOR_ORDERMANAGER_REQUIREUSERINSERVICECALLS: "false"
     ENACTOR_PROCESSCONNECTIONS_ACCOUNTCREDENTIALSPROVIDERCLASSNAME: com.enactor.mfc.accountCredentials.AccountCredentialsProvider
     ENACTOR_PROCESSCONNECTIONS_DEFINITIONID: PosBackOfficeEstateManager
@@ -176,15 +177,14 @@ data:
     ENACTOR_WEBSERVICES_ENABLESTANDARDHTTPHEADERS: "true"
     ENACTOR_WEBSERVICES_ENABLESTANDARDSOAPHEADERS: "true"
     ENACTOR_WEBSHOP_SOLRURL: http://solr:39846/solr/enactor
-    JAVA_COUNTRY: GB
+    JAVA_COUNTRY: {{ .Values.config.java.country | default "GB" }}
+    JTIMEZONE: {{ .Values.config.java.timezone | default "Europe/Copenhagen" }}
     JMPS: 512m
-    JTIMEZONE: Europe/Copenhagen
     JXMS: 512m
     JXMX: 768m
     RESOURCE_FACTORY_TOKEN: "org.apache.tomcat.dbcp.dbcp.BasicDataSourceFactory"
     #RESOURCE_FACTORY_TOKEN: com.enactor.core.EncryptedPasswordDataSourceFactory
     ENACTOR_DOCUMENTPROCESSING_FORCE_RETRY_DELAY_MINS: "10"
-    ENACTOR_MODULES_PROCESSINGNODEMODULE: "false"
     ENACTOR_COMMON_FILEREPOSITORYHOME: "/enactor/app/home/FileRepository"
 
     # - the following needs to be created as a secret, and referenced in values.

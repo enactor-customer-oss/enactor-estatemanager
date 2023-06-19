@@ -36,6 +36,22 @@ global:
       #- name: ENACTOR_TASK_SYSTEMUSER
       #  value: "taskadmin"
 
+config:
+  common:
+    processSet: null
+
+  modules:
+    crm: false
+    customerCollection: false
+    inventory: false
+    order: false
+    processing: true
+    repair: false
+    timeAttendance: false
+
+  java:
+    country: null
+    timezone: null
 
 # Enactor Configuration
   
