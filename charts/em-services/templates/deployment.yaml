@@ -1,7 +1,9 @@
 {{- $fullName := include "em-services.fullname" . -}}
 
-{{- $waitforitRegistry := .Values.global.waitforit.image.registry | default .Values.initcontainers.waitforit.image.registry -}}
-{{- $waitforitRepository := .Values.global.waitforit.image.repository | default .Values.initcontainers.waitforit.image.repository -}}
+{{- $dependsOnImage := .Values.global.dependsOn.image | default .Values.initcontainers.dependsOn.image -}}
+{{- $dependsOnTag := .Values.global.dependsOn.tag | default .Values.initcontainers.dependsOn.tag -}}
+{{- $dependsOnPullPolicy := .Values.global.dependsOn.imagePullPolicy | default "IfNotPresent" -}}
+{{- $dependsOn := (printf "%s:%s" $dependsOnImage $dependsOnTag) -}}
 
 {{- $applicationRegistry := .Values.global.enactor.image.registry | default .Values.image.registry -}}
 {{- $applicationRepository := .Values.global.enactor.image.repository | default .Values.image.repository -}}
@@ -62,20 +64,22 @@ spec:
       terminationGracePeriodSeconds: 300
 
       initContainers:
-        - name: emp-http-check
+        - name: depends-on
+          image: {{ $dependsOn }}
+          imagePullPolicy: {{ $dependsOnPullPolicy }}
+          command:
+            {{ .Values.global.dependsOn.command | toYaml | indent 12 | trim }}
           securityContext:
-            {{- toYaml .Values.initcontainers.waitforit.securityContext | nindent 12 }}
-          image: {{ $waitforitRegistry }}/{{ $waitforitRepository }}:{{ .Values.initcontainers.waitforit.image.tag }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+            {{- toYaml .Values.global.dependsOn.securityContext | nindent 12 }}
           resources:
-            {{ .Values.initcontainers.waitforit.resources| toYaml | indent 12 | trim}}
+            {{ .Values.global.dependsOn.resources| toYaml | indent 12 | trim}}
           env:
             - name: HOST
-              value: "{{ .Release.Name }}-em-processing"
+              value: {{ .Release.Name }}-em-processing
             - name: PORT
               value: "39832"
-            - name: TIMEOUT
-              value: '200'
+            - name: INTERVAL
+              value: '2'
 
       containers:
         - name: {{ .Chart.Name }}

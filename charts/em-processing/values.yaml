@@ -28,8 +28,10 @@ serviceAccount:
 podAnnotations: {}
 podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  fsGroup: 1100
+  runAsUser: 1100
+  runAsGroup: 1100
 
 securityContext: 
   runAsUser: 1100
@@ -120,9 +122,9 @@ probes:
 
   startupProbe:
     enabled: true
-    initialDelaySeconds: 5
-    periodSeconds: 60
-    timeoutSeconds: 10
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 5
     failureThreshold: 10
     successThreshold: 1
 
@@ -143,27 +145,5 @@ application:
       name: 'emp-debuglog'
 
 initcontainers:
-  waitforit:
+  dependsOn:
     deploy: true
-    
-    image:
-      registry: "registry.hub.docker.com"
-      repository: willwill/wait-for-it
-      tag: '1.3.1'
-    
-    
-    resources:
-      requests:
-        cpu: '100m'
-        memory: '16Mi'
-      limits:
-        cpu: '100m'
-        memory: '16Mi'
-    securityContext: {}
-      # runAsUser: 1100
-      # capabilities:
-      #   drop:
-      #   - ALL
-      # readOnlyRootFilesystem: true
-      # runAsNonRoot: true
-      # runAsUser: 1000

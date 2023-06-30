@@ -2,19 +2,39 @@ global:
   env: tmp
   clusterUrl: 'enactor-em.local'
 
-  waitforit:
-    image: 
-      registry:
-      repository: willwill/wait-for-it
+  dependsOn:
+    imagePullPolicy: IfNotPresent
+    image: busybox
+    tag: "1.31"
+    command:
+      - sh
+      - -c
+      - |-
+        echo -e "Checking for the availability of '$HOST' on port $PORT";
+        while ! nc -z $HOST $PORT;
+          do sleep $INTERVAL;
+          printf "-";
+        done;
+        echo -e "  >> Service '$HOST' has started";
+    resources:
+      requests:
+        cpu: '20m'
+        memory: '20Mi'
+      limits:
+        cpu: '100m'
+        memory: '200Mi'
+    securityContext: {}
+
+  persistence:
+    storageClass: default-storage-class
 
   # -- DB Connection details
   # set to mariadb-0.mariadb if using the in-cluster database (see below) else
   # set DB connection details here. db_pass is encrypted in estate manager
   database:
-    db_host: mariadb-0.mariadb
-    db_port: 3306
-    db_schema: enactorem_test
-
+    host: mariadb-0.mariadb
+    port: 3306
+    # setting DB-name here could collide with mariadb.auth.database, thus we use a shared hardcoded name instead
 
   # -- Pass extra environment variables to all enactor containers (override common vars).
   enactor:
@@ -22,21 +42,37 @@ global:
       registry:
       tag:
 
-    extraVars: []
-      #- name: ENACTOR_DB_PASS
-      #  value: "pass"
-      #- name: ENACTOR_DB_USER
-      #  value: "user"
-      #- name: ENACTOR_AXIS2_PASSWORD
-      #  value: "pass"
-      #- name: ENACTOR_AXIS2_USER
-      #  value: "admin"
-      #- name: ENACTOR_TASK_SYSTEMPASSWORD
-      #  value: "pass"
-      #- name: ENACTOR_TASK_SYSTEMUSER
-      #  value: "taskadmin"
+    extraVars:
+      - name: ENACTOR_DB_USER
+        value: "enactor"
+      - name: ENACTOR_DB_PASS
+        valueFrom:
+          secretKeyRef:
+            name: em-secrets
+            key: mariadb-password
+      - name: ENACTOR_AXIS2_USER
+        valueFrom:
+          secretKeyRef:
+            name: em-secrets
+            key: axis2_username
+      - name: ENACTOR_AXIS2_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: em-secrets
+            key: axis2_password
+      - name: ENACTOR_TASK_SYSTEMUSER
+        valueFrom:
+          secretKeyRef:
+            name: em-secrets
+            key: task_username
+      - name: ENACTOR_TASK_SYSTEMPASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: em-secrets
+            key: task_password
 
-config:
+    imagePullSecretData: null
+
   common:
     processSet: null
 
@@ -60,7 +96,7 @@ em-processing:
   ingress:
     enabled: true
   persistentVolume:
-    persistentStorageClassName: managed-nfs-storage-retain
+    storageClass: managed-nfs-storage-retain
     size: "100Gi"
   sidecars:
     empwatch:
@@ -72,7 +108,7 @@ em-application:
   ingress:
     enabled: true
   persistentVolume:
-    persistentStorageClassName: managed-nfs-storage-retain
+    storageClass: managed-nfs-storage-retain
     size: "5Gi"
 
 em-services:
@@ -101,13 +137,13 @@ em-reports:
 mariadb:
   deploy: true
   auth:
-    rootPassword: "toor"
-    database: "enactorem_test"
-    username: "enactor_app"
-    password: "p4ssw0rd"
+    database: "enactorem"
+    username: "enactor"
+    existingSecret: em-secrets
   primary:
     persistence:
       size: "25Gi"
+      storageClass: managed-nfs-storage-retain
     configuration: |
       [mysqld]
       skip-name-resolve

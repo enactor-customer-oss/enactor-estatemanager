@@ -1,16 +1,17 @@
 {{- $fullName := include "em-application.fullname" . -}}
 
-{{- $waitforitRegistry := .Values.global.waitforit.image.registry | default .Values.initcontainers.waitforit.image.registry -}}
-{{- $waitforitRepository := .Values.global.waitforit.image.repository | default .Values.initcontainers.waitforit.image.repository -}}
+{{- $dependsOnImage := .Values.global.dependsOn.image | default .Values.initcontainers.dependsOn.image -}}
+{{- $dependsOnTag := .Values.global.dependsOn.tag | default .Values.initcontainers.dependsOn.tag -}}
+{{- $dependsOnPullPolicy := .Values.global.dependsOn.imagePullPolicy | default "IfNotPresent" -}}
+{{- $dependsOn := (printf "%s:%s" $dependsOnImage $dependsOnTag) -}}
 
 {{- $applicationRegistry := .Values.global.enactor.image.registry | default .Values.image.registry -}}
 {{- $applicationRepository := .Values.global.enactor.image.repository | default .Values.image.repository -}}
 
 {{- $applicationTag :=  default (default .Values.global.enactor.image.tag .Chart.AppVersion) .Values.image.tag  -}}
 
-
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "em-application.fullname" . }}
   labels:
@@ -19,13 +20,13 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
-  minReadySeconds: 5
-  progressDeadlineSeconds: 600
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-    type: RollingUpdate
+  # minReadySeconds: 5
+  # progressDeadlineSeconds: 600
+  # strategy:
+  #   rollingUpdate:
+  #     maxSurge: 1
+  #     maxUnavailable: 0
+  #   type: RollingUpdate
   selector:
     matchLabels:
       {{- include "em-application.selectorLabels" . | nindent 6 }}
@@ -49,7 +50,26 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       automountServiceAccountToken: false
-      restartPolicy: Always
+#      restartPolicy: Always
+      terminationGracePeriodSeconds: 300
+
+      initContainers:
+        - name: depends-on
+          image: {{ $dependsOn }}
+          imagePullPolicy: {{ $dependsOnPullPolicy }}
+          command:
+            {{ .Values.global.dependsOn.command | toYaml | indent 12 | trim }}
+          securityContext:
+            {{- toYaml .Values.global.dependsOn.securityContext | nindent 12 }}
+          resources:
+            {{ .Values.global.dependsOn.resources| toYaml | indent 12 | trim}}
+          env:
+            - name: HOST
+              value: {{ .Release.Name }}-em-services
+            - name: PORT
+              value: "39833"
+            - name: INTERVAL
+              value: '2'
 
       volumes:
         - name: enactor-data-{{ .Values.application.nameShort }}
@@ -69,23 +89,6 @@ spec:
       #  configMap:
       #    name: {{ .Values.application.nameShort }}-setenv  
 
-      terminationGracePeriodSeconds: 300
-
-      initContainers:
-        - name: ems-http-check
-          securityContext:
-            {{- toYaml .Values.initcontainers.waitforit.securityContext | nindent 12 }}
-          image: {{ $waitforitRegistry }}/{{ $waitforitRepository }}:{{ .Values.initcontainers.waitforit.image.tag }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          resources:
-            {{ .Values.initcontainers.waitforit.resources | toYaml | indent 12 | trim}}            
-          env:
-            - name: HOST
-              value: "{{ .Release.Name }}-em-services"
-            - name: PORT
-              value: "39833"
-            - name: TIMEOUT
-              value: '500'
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -161,9 +164,12 @@ spec:
             - mountPath: /enactor/app/home/DeploymentJARs
               name: enactor-data-{{ .Values.application.nameShort }}
               subPath: DeploymentJARs
-            - mountPath: "/enactor/app/home/Data/Enactor Web Maintenance/MessageResource"
+            - mountPath: /enactor/app/home/data
               name: enactor-data-{{ .Values.application.nameShort }}
-              subPath: MessageResources
+              subPath: data
+            # - mountPath: "/enactor/app/home/data/Enactor Web Maintenance/MessageResource"
+            #   name: enactor-data-{{ .Values.application.nameShort }}
+            #   subPath: MessageResources
             {{- if .Values.application.configMap.debugLog.enable }}
             - name:  debuglog
               mountPath: {{ .Values.application.configMap.debugLog.mountPath }}
@@ -203,7 +209,6 @@ spec:
           {{ toYaml .Values.application.extraVars | nindent 10 }}
           {{- end }}
 
-          
 
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -217,3 +222,17 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: enactor-data-{{ .Values.application.nameShort }}
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage:  {{ .Values.persistentVolume.size }}  
+        storageClassName: {{ .Values.global.persistence.storageClass | default .Values.persistentVolume.storageClass }}    
+        {{- with .Values.persistentVolume.selector }}
+        selector:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}

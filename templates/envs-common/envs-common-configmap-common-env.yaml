@@ -43,7 +43,7 @@ data:
     ENACTOR_COMMON_ENCRYPTEDLIBSDIR: /enactor/app/encryptedlibs
     ENACTOR_COMMON_LICENCEFILENAME: /enactor/shared/licence/licence.xml
     ENACTOR_COMMON_PARENTPROCESSSET: NextGen
-    ENACTOR_COMMON_PROCESSSET: {{ .Values.config.common.processSet | default "NextGen" }}
+    ENACTOR_COMMON_PROCESSSET: {{ .Values.global.common.processSet | default "NextGen" }}
     ENACTOR_COMMON_SOLRURL: http://solr:39846/solr
     ENACTOR_COMMON_USEPAYMENTSERVICE: "false"
     ENACTOR_DB_DRIVERCLASSNAME: com.mysql.jdbc.Driver
@@ -64,13 +64,13 @@ data:
     ENACTOR_MAIL_AUTH_FULLADDRESS: "false"
     ENACTOR_MESSAGESERVICE_MESSAGECOMPATIBILITYFORMAT: "1"
 
-    ENACTOR_MODULES_CRMMODULE: {{ .Values.config.modules.crm | default false | quote }}
-    ENACTOR_MODULES_CUSTOMERCOLLECTIONSMODULE: {{ .Values.config.modules.customerCollection | default false | quote }}
-    ENACTOR_MODULES_INVENTORYMODULE: {{ .Values.config.modules.inventory | default false | quote }}
-    ENACTOR_MODULES_ORDERMODULE: {{ .Values.config.modules.order | default false | quote }}
-    ENACTOR_MODULES_PROCESSINGNODEMODULE: {{ .Values.config.modules.processing | default false | quote }}
-    ENACTOR_MODULES_REPAIRMODULE: {{ .Values.config.modules.repair | default false | quote }}
-    ENACTOR_MODULES_TIMEATTENDANCEMODULE: {{ .Values.config.modules.timeAttendance | default false | quote }}
+    ENACTOR_MODULES_CRMMODULE: {{ .Values.global.modules.crm | default false | quote }}
+    ENACTOR_MODULES_CUSTOMERCOLLECTIONSMODULE: {{ .Values.global.modules.customerCollection | default false | quote }}
+    ENACTOR_MODULES_INVENTORYMODULE: {{ .Values.global.modules.inventory | default false | quote }}
+    ENACTOR_MODULES_ORDERMODULE: {{ .Values.global.modules.order | default false | quote }}
+    ENACTOR_MODULES_PROCESSINGNODEMODULE: {{ .Values.global.modules.processing | default false | quote }}
+    ENACTOR_MODULES_REPAIRMODULE: {{ .Values.global.modules.repair | default false | quote }}
+    ENACTOR_MODULES_TIMEATTENDANCEMODULE: {{ .Values.global.modules.timeAttendance | default false | quote }}
 
     ENACTOR_ORDERMANAGER_REQUIREUSERINSERVICECALLS: "false"
     ENACTOR_PROCESSCONNECTIONS_ACCOUNTCREDENTIALSPROVIDERCLASSNAME: com.enactor.mfc.accountCredentials.AccountCredentialsProvider
@@ -177,8 +177,8 @@ data:
     ENACTOR_WEBSERVICES_ENABLESTANDARDHTTPHEADERS: "true"
     ENACTOR_WEBSERVICES_ENABLESTANDARDSOAPHEADERS: "true"
     ENACTOR_WEBSHOP_SOLRURL: http://solr:39846/solr/enactor
-    JAVA_COUNTRY: {{ .Values.config.java.country | default "GB" }}
-    JTIMEZONE: {{ .Values.config.java.timezone | default "Europe/Copenhagen" }}
+    JAVA_COUNTRY: {{ .Values.global.java.country | default "GB" }}
+    JTIMEZONE: {{ .Values.global.java.timezone | default "Europe/Copenhagen" }}
     JMPS: 512m
     JXMS: 512m
     JXMX: 768m

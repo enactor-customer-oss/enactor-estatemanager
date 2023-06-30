@@ -1,14 +1,14 @@
 {{- $fullName := include "em-processing.fullname" . -}}
 
-{{- $waitforitRegistry := .Values.global.waitforit.image.registry | default .Values.initcontainers.waitforit.image.registry -}}
-{{- $waitforitRepository := .Values.global.waitforit.image.repository | default .Values.initcontainers.waitforit.image.repository -}}
+{{- $dependsOnImage := .Values.global.dependsOn.image | default .Values.initcontainers.dependsOn.image -}}
+{{- $dependsOnTag := .Values.global.dependsOn.tag | default .Values.initcontainers.dependsOn.tag -}}
+{{- $dependsOnPullPolicy := .Values.global.dependsOn.imagePullPolicy | default "IfNotPresent" -}}
+{{- $dependsOn := (printf "%s:%s" $dependsOnImage $dependsOnTag) -}}
 
 {{- $applicationRegistry := .Values.global.enactor.image.registry | default .Values.image.registry -}}
 {{- $applicationRepository := .Values.global.enactor.image.repository | default .Values.image.repository -}}
 
 {{- $applicationTag :=  default (default .Values.global.enactor.image.tag .Chart.AppVersion) .Values.image.tag  -}}
-
-
 
 apiVersion: apps/v1
 kind: StatefulSet
@@ -36,6 +36,7 @@ spec:
         {{ $labelName | quote }}: {{ $labelValue | quote }}
         {{- end }}
     spec:
+      enableServiceLinks: false
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -44,25 +45,26 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       automountServiceAccountToken: false
-      restartPolicy: Always
+#      restartPolicy: Always
       terminationGracePeriodSeconds: 60
 
       initContainers:
-        - name: database-check
-          image: {{ $waitforitRegistry }}/{{ $waitforitRepository }}:{{ .Values.initcontainers.waitforit.image.tag }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: depends-on
+          image: {{ $dependsOn }}
+          imagePullPolicy: {{ $dependsOnPullPolicy }}
+          command:
+            {{ .Values.global.dependsOn.command | toYaml | indent 12 | trim }}
           securityContext:
-            {{- toYaml .Values.initcontainers.waitforit.securityContext | nindent 12 }}
+            {{- toYaml .Values.global.dependsOn.securityContext | nindent 12 }}
           resources:
-            {{ .Values.initcontainers.waitforit.resources| toYaml | indent 12 | trim}}
+            {{ .Values.global.dependsOn.resources| toYaml | indent 12 | trim}}
           env:
             - name: HOST
-              value: {{ .Values.global.database.db_host }}
+              value: {{ .Release.Name }}-mariadb
             - name: PORT
-              value: '{{ .Values.global.database.db_port }}'
-            - name: TIMEOUT
-              value: '200'
-
+              value: {{ .Values.global.database.port | default 3306 | quote}}
+            - name: INTERVAL
+              value: '2'
 
       volumes:
         - name: enactor-data-{{ .Values.application.nameShort }}-home
@@ -205,11 +207,11 @@ spec:
     - metadata:
         name: enactor-data-{{ .Values.application.nameShort }}-home
       spec:
-        accessModes: [ "ReadWriteMany" ]
+        accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
             storage:  {{ .Values.persistentVolume.size }}  
-        storageClassName: {{ .Values.persistentVolume.storageClass }}    
+        storageClassName: {{ .Values.global.persistence.storageClass | default .Values.persistentVolume.storageClass }}    
         {{- with .Values.persistentVolume.selector }}
         selector:
           {{- toYaml . | nindent 10 }}
